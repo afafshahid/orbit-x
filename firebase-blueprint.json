@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "Trip": {
+      "title": "Trip",
+      "description": "Space trip destination details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "destination": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "departureDate": { "type": "string", "format": "date-time" },
+        "duration": { "type": "string" },
+        "totalSeats": { "type": "integer" },
+        "availableSeats": { "type": "integer" },
+        "image": { "type": "string" },
+        "category": { "type": "string", "enum": ["Moon", "Mars", "ISS", "Venus", "Jupiter", "Saturn", "Europa", "Proxima Centauri"] }
+      },
+      "required": ["name", "destination", "price", "departureDate", "totalSeats", "availableSeats", "category"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "User booking record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "tripId": { "type": "string" },
+        "seatNumber": { "type": "string" },
+        "class": { "type": "string", "enum": ["Economy", "Business", "First Class"] },
+        "status": { "type": "string", "enum": ["confirmed", "cancelled", "refunded"] },
+        "totalPaid": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "qrCode": { "type": "string" }
+      },
+      "required": ["userId", "tripId", "seatNumber", "class", "status", "totalPaid", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User review for a trip",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "tripId": { "type": "string" },
+        "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "tripId", "rating", "comment", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "trips/{tripId}": {
+      "schema": "Trip",
+      "description": "Available space trips"
+    },
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Booking records"
+    },
+    "trips/{tripId}/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Trip reviews"
+    }
+  }
+}

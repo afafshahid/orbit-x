@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // USER VALIDATION
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'createdAt']) &&
+             data.keys().size() <= 4 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.createdAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL']);
+    }
+
+    // TRIP VALIDATION
+    function isValidTrip(data) {
+      return data.keys().hasAll(['name', 'destination', 'price', 'departureDate', 'totalSeats', 'availableSeats', 'category']) &&
+             data.name is string && data.name.size() <= 100 &&
+             data.destination is string && data.destination.size() <= 100 &&
+             data.price is number && data.price >= 0 &&
+             data.totalSeats is int && data.totalSeats > 0 &&
+             data.availableSeats is int && data.availableSeats >= 0 &&
+             data.availableSeats <= data.totalSeats &&
+             data.category in ['Moon', 'Mars', 'ISS', 'Venus', 'Jupiter', 'Saturn', 'Europa', 'Proxima Centauri'];
+    }
+
+    match /trips/{tripId} {
+      allow read: if true; // Publicly browse trips
+      allow create, update, delete: if false; // Only admins or system can modify (mocking admin for now)
+    }
+
+    // BOOKING VALIDATION
+    function isValidBooking(data) {
+      return data.keys().hasAll(['userId', 'tripId', 'seatNumber', 'class', 'status', 'totalPaid', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.tripId is string &&
+             data.seatNumber is string && data.seatNumber.size() <= 10 &&
+             data.class in ['Economy', 'Business', 'First Class'] &&
+             data.status in ['confirmed', 'cancelled', 'refunded'] &&
+             data.totalPaid is number && data.totalPaid >= 0 &&
+             data.createdAt == request.time;
+    }
+
+    match /bookings/{bookingId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidBooking(incoming()) && 
+                    exists(/databases/$(database)/documents/trips/$(incoming().tripId));
+      allow update: if isSignedIn() && isOwner(existing().userId) && 
+                    isValidBooking(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+    }
+
+    // REVIEW VALIDATION
+    function isValidReview(data) {
+      return data.keys().hasAll(['userId', 'userName', 'tripId', 'rating', 'comment', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 1000 &&
+             data.createdAt == request.time;
+    }
+
+    match /trips/{tripId}/reviews/{reviewId} {
+      allow list: if true;
+      allow get: if true;
+      allow create: if isSignedIn() && isValidReview(incoming()) && 
+                    incoming().tripId == tripId;
+      allow update: if isOwner(existing().userId) && isValidReview(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'comment']);
+      allow delete: if isOwner(existing().userId);
+    }
+  }
+}
