@@ -5,8 +5,6 @@
 A futuristic space travel booking application built with React + TypeScript and Firebase. Browse destinations across the solar system, select your seat class, process payment, and receive a digital boarding pass — all in a cyberpunk-themed interface.
 
 **Course:** Applied Human Computer Interaction — Section 6C  
-**Institution:** FAST-NUCES Karachi  
-**Instructor:** Shaheer Ahmed Khan  
 **Team:** Maryiam Khan (23k-0585) · Afaf Shahid (23k-0678) · Aiman Nadeem (23k-0876)
 
 ---
